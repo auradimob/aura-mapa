@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0">
+<title>AURA Santana — Mapa de Saúde</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body { width:100%; height:100%; overflow:hidden; font-family:'Segoe UI',Arial,sans-serif; background:#0D0D0D; color:#fff; }
+#header { position:fixed; top:0; left:0; right:0; z-index:200; background:#0D0D0D; padding:8px 12px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #C8972A44; height:44px; }
+.brand-name { font-size:12px; font-weight:700; color:#C8972A; letter-spacing:.08em; }
+.brand-sub { font-size:9px; color:#888; }
+.tag { font-size:9px; background:#C8972A22; color:#C8972A; border:1px solid #C8972A44; padding:2px 7px; border-radius:20px; white-space:nowrap; }
+#filters { position:fixed; top:44px; left:0; right:0; z-index:200; background:#111; padding:5px 10px; display:flex; gap:5px; overflow-x:auto; border-bottom:1px solid #222; height:34px; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+#filters::-webkit-scrollbar { display:none; }
+.fb { font-size:10px; padding:3px 10px; border-radius:20px; white-space:nowrap; border:1px solid #333; background:#1a1a1a; color:#888; cursor:pointer; flex-shrink:0; }
+.fb.on { color:#fff; border-color:transparent; }
+.fb[data-t="all"].on { background:#C8972A; }
+.fb[data-t="hospital"].on { background:#E24B4A; }
+.fb[data-t="clinica"].on { background:#378ADD; }
+.fb[data-t="laboratorio"].on { background:#1D9E75; }
+.fb[data-t="metro"].on { background:#7F77DD; }
+.fb[data-t="prevent"].on { background:#9B27AF; }
+#mapwrap { position:fixed; top:78px; left:0; right:0; bottom:0; overflow:hidden; touch-action:none; }
+#mc { position:absolute; top:0; left:0; cursor:grab; }
+#mc:active { cursor:grabbing; }
+#tip { position:absolute; pointer-events:none; background:rgba(13,13,13,0.95); border:1px solid #444; border-radius:8px; padding:7px 11px; font-size:11px; line-height:1.5; display:none; z-index:100; max-width:200px; }
+#tip strong { font-size:12px; color:#fff; display:block; margin-bottom:2px; }
+#tip .td { color:#C8972A; font-size:10px; }
+#tip .ta { color:#888; font-size:10px; }
+#legend { position:fixed; bottom:0; left:0; right:0; z-index:200; background:rgba(13,13,13,0.96); border-top:1px solid #C8972A44; padding:6px 10px 8px; }
+#leg-toggle-bar { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+#leg-toggle-bar span { font-size:9px; font-weight:700; color:#C8972A; letter-spacing:.05em; text-transform:uppercase; }
+#leg-toggle-bar button { background:none; border:none; color:#666; font-size:13px; cursor:pointer; padding:0 4px; }
+#leg-scroll { display:flex; gap:10px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:2px; scrollbar-width:none; }
+#leg-scroll::-webkit-scrollbar { display:none; }
+.lcb { display:flex; flex-direction:column; gap:2px; flex-shrink:0; border-right:1px solid #222; padding-right:10px; }
+.lcb:last-child { border-right:none; }
+.lch { display:flex; align-items:center; gap:4px; margin-bottom:1px; }
+.ld { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.lct { font-size:8px; font-weight:700; color:#ccc; white-space:nowrap; }
+.li { font-size:7.5px; color:#888; white-space:nowrap; line-height:1.5; display:flex; align-items:center; gap:3px; }
+.ln { font-weight:700; min-width:11px; }
+.lrb { display:flex; flex-direction:column; gap:3px; flex-shrink:0; justify-content:center; border-right:1px solid #222; padding-right:10px; }
+.lr { display:flex; align-items:center; gap:3px; font-size:7.5px; color:#888; white-space:nowrap; }
+.lrc { width:8px; height:8px; border-radius:50%; border:1.5px solid; flex-shrink:0; }
+.lab { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; flex-shrink:0; min-width:55px; }
+.lad { width:12px; height:12px; border-radius:50%; background:#C8972A; border:2px solid #fff; }
+.lal { font-size:7.5px; color:#C8972A; font-weight:700; text-align:center; white-space:nowrap; }
+#zoom-btns { position:fixed; right:10px; bottom:0; z-index:201; display:flex; flex-direction:column; gap:4px; padding-bottom:10px; }
+#zoom-btns button { width:32px; height:32px; background:rgba(13,13,13,0.9); border:1px solid #444; color:#fff; font-size:18px; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1; }
+</style>
+</head>
+<body>
+<div id="header">
+  <div><div class="brand-name">AURA SANTANA</div><div class="brand-sub">Mapa de Saúde · Zona Norte SP</div></div>
+  <div class="tag">BTS Saúde 500–1.000m²</div>
+</div>
+<div id="filters">
+  <button class="fb on" data-t="all">Todos</button>
+  <button class="fb" data-t="hospital">Hospitais/PS</button>
+  <button class="fb" data-t="clinica">Clínicas</button>
+  <button class="fb" data-t="laboratorio">Laboratórios</button>
+  <button class="fb" data-t="metro">Metrô</button>
+  <button class="fb" data-t="prevent">Prevent Senior</button>
+</div>
+<div id="mapwrap"><canvas id="mc"></canvas></div>
+<div id="tip"></div>
+<div id="legend">
+  <div id="leg-toggle-bar"><span>Legenda</span><button id="leg-btn" onclick="toggleLeg()">▼</button></div>
+  <div id="leg-scroll"></div>
+</div>
+
+<script>
+// ── DATA ────────────────────────────────────────────────────────────────────
+const AURA = [-23.5049481, -46.6223829];
+
+const PLACES = [
+  {id:1,  label:'Metrô Santana',              addr:'Linha 1 – Azul',                        lat:-23.5026, lng:-46.6247, type:'metro'},
+  {id:2,  label:'Metrô Carandiru',            addr:'Linha 1 – Azul',                        lat:-23.5091, lng:-46.6249, type:'metro'},
+  {id:3,  label:'Hospital HSANP',             addr:'Voluntários da Pátria, 2786',            lat:-23.4957, lng:-46.6255, type:'hospital'},
+  {id:4,  label:'Hospital IGESP Santana',     addr:'Rua Alferes Magalhães, 315',             lat:-23.5052, lng:-46.6230, type:'hospital'},
+  {id:5,  label:'PS Dr. Lauro Braga',         addr:'Voluntários da Pátria, 943',             lat:-23.5120, lng:-46.6264, type:'hospital'},
+  {id:6,  label:'UPA Santana',                addr:'Voluntários da Pátria, 270',             lat:-23.5180, lng:-46.6279, type:'hospital'},
+  {id:7,  label:'Hosp. São Camilo Santana',   addr:'Voluntários da Pátria, 3997',            lat:-23.4859, lng:-46.6286, type:'hospital'},
+  {id:8,  label:'Hosp. N. Sra. Rosário',      addr:'R. Dr. Edson de Melo, 357',              lat:-23.5117, lng:-46.5838, type:'hospital'},
+  {id:9,  label:'PAI-ZN (Saúde Mental)',      addr:'Voluntários da Pátria, 4301',            lat:-23.4851, lng:-46.6321, type:'hospital'},
+  {id:10, label:'Hapvida Centro Médico',      addr:'Av. Cruzeiro do Sul, 2977',              lat:-23.5048, lng:-46.6252, type:'clinica'},
+  {id:11, label:'dr.consulta Santana',        addr:'Av. Cruzeiro do Sul, 3099',              lat:-23.5035, lng:-46.6251, type:'clinica'},
+  {id:12, label:'Clínica Santana Med. Int.',  addr:'Rua Duarte de Azevedo, 331',             lat:-23.5008, lng:-46.6227, type:'clinica'},
+  {id:13, label:'Policlínica Real',           addr:'Rua Duarte de Azevedo, 426',             lat:-23.5012, lng:-46.6218, type:'clinica'},
+  {id:14, label:'Clínica de Fraturas ZN',     addr:'Voluntários da Pátria, 2754',            lat:-23.4961, lng:-46.6256, type:'clinica'},
+  {id:15, label:'Santana Cór',               addr:'Rua Banco das Palmas, 401',              lat:-23.5013, lng:-46.6311, type:'clinica'},
+  {id:16, label:'UBS Carandiru',             addr:'Rua José Pereira Jorge, 305',            lat:-23.5043, lng:-46.6109, type:'clinica'},
+  {id:17, label:'Labi Exames',              addr:'Voluntários da Pátria, 1801',            lat:-23.5045, lng:-46.6265, type:'laboratorio'},
+  {id:18, label:'Bio Fast Plus',            addr:'Rua Alferes Magalhães, 92',              lat:-23.5054, lng:-46.6253, type:'laboratorio'},
+  {id:19, label:'Salomão Zoppi (DASA)',     addr:'Av. Leôncio de Magalhães, 1133',         lat:-23.4915, lng:-46.6184, type:'laboratorio'},
+  {id:20, label:'Hermes Pardini',           addr:'Voluntários da Pátria, 2669',            lat:-23.4968, lng:-46.6261, type:'laboratorio'},
+  {id:21, label:'El Diagnostics',          addr:'Rua Dr. Olavo Egídio, 369',              lat:-23.4998, lng:-46.6221, type:'laboratorio'},
+  {id:22, label:'Lavoisier Darzan',        addr:'Av. Cruzeiro do Sul, 3000',              lat:-23.5044, lng:-46.6244, type:'laboratorio'},
+  {id:23, label:'a+ Leôncio Magalhães',   addr:'Av. Leôncio de Magalhães, 690',          lat:-23.4948, lng:-46.6158, type:'laboratorio'},
+  {id:24, label:'Delboni L.D. Villares',  addr:'Av. Luiz Dumont Villares, 514',          lat:-23.4980, lng:-46.6120, type:'laboratorio'},
+  {id:25, label:'Delta Mais Saúde',       addr:'Av. Gen. Ataliba Leonel, 93',            lat:-23.5075, lng:-46.6256, type:'laboratorio'},
+  {id:26, label:'Prevent Sr. – Santana',   addr:'Av. Cruzeiro do Sul, 2463',              lat:-23.5048, lng:-46.6243, type:'prevent'},
+  {id:27, label:'Prevent Sr. – Jardim SP', addr:'Av. Leôncio de Magalhães, 885',          lat:-23.4955, lng:-46.6163, type:'prevent'},
+  {id:28, label:'Prevent Sr. – Reabil.',   addr:'Av. Cruzeiro do Sul, 2463 – 5º andar',  lat:-23.5046, lng:-46.6240, type:'prevent'},
+  {id:29, label:'Prev. Sr. – Monte Sinai', addr:'Rua Ezequiel Freire, 51 – Santana',     lat:-23.5020, lng:-46.6238, type:'prevent'},
+  {id:30, label:'Prev. Sr. – Aptomed',     addr:'Rua Duarte de Azevedo, 284 – Santana',  lat:-23.5010, lng:-46.6222, type:'prevent'},
+  {id:31, label:'Hosp. Presidente (PS)',      addr:'Av. Nova Cantareira, 2398 – Tucuruvi',    lat:-23.4760, lng:-46.6219, type:'prevent'},
+  {id:36, label:'Prev. Sr. – Ezequiel Freire', addr:'Rua Ezequiel Freire, 306 – Santana',      lat:-23.5006, lng:-46.6243, type:'prevent'},
+  {id:37, label:'Prev. Sr. – Vol. da Pátria',  addr:'Rua Voluntários da Pátria, 1284',         lat:-23.5082, lng:-46.6263, type:'prevent'},
+  {id:38, label:'Prev. Sr. – Carchedi',        addr:'Rua Ezequiel Freire, 55 – Santana',       lat:-23.5008, lng:-46.6240, type:'prevent'},
+  {id:39, label:'Prev. Sr. – Alergo Oftalmo',  addr:'Rua Ezequiel Freire, 35 – Santana',       lat:-23.5009, lng:-46.6239, type:'prevent'},
+  {id:40, label:'Prev. Sr. – ABCORPUS',        addr:'Rua Banco das Palmas, 298 – Santana',     lat:-23.5014, lng:-46.6308, type:'prevent'},
+  {id:41, label:'Prev. Sr. – Makabe',          addr:'Rua Amaral Gama, 333 – Santana',          lat:-23.5018, lng:-46.6232, type:'prevent'},
+  {id:32, label:'CDB Medicina Diagnóstica', addr:'Av. Leôncio de Magalhães, 874',          lat:-23.4952, lng:-46.6162, type:'laboratorio'},
+  {id:33, label:'a+ Duarte de Azevedo',     addr:'Rua Duarte de Azevedo, 169 – Santana',  lat:-23.5003, lng:-46.6231, type:'laboratorio'},
+  {id:34, label:'a+ Augusto Tolle',         addr:'Rua Augusto Tolle, 434 – Santana',      lat:-23.5030, lng:-46.6260, type:'laboratorio'},
+  {id:35, label:'Dr. Exame Santana',        addr:'Rua Ezequiel Freire, 684 – Santana',    lat:-23.5023, lng:-46.6236, type:'laboratorio'},
+];
+
+const COLORS = {hospital:'#E24B4A',clinica:'#378ADD',laboratorio:'#1D9E75',metro:'#7F77DD',prevent:'#9B27AF'};
+const LABELS = {hospital:'Hospitais/PS',clinica:'Clínicas',laboratorio:'Laboratórios',metro:'Metrô',prevent:'Prevent Senior'};
+const RADII  = [500,1000,1500,2000];
+const RFILL  = ['rgba(26,110,189,0.18)','rgba(26,110,189,0.11)','rgba(26,110,189,0.07)','rgba(26,110,189,0.04)'];
+const RSTROKE= ['#1A6EBD','rgba(26,110,189,0.6)','rgba(26,110,189,0.4)','rgba(26,110,189,0.25)'];
+
+// ── MAP ENGINE ──────────────────────────────────────────────────────────────
+const DEG2RAD = Math.PI/180;
+function lat2y(lat,z){ return (1 - Math.log(Math.tan(lat*DEG2RAD) + 1/Math.cos(lat*DEG2RAD))/Math.PI)/2 * Math.pow(2,z)*256; }
+function lng2x(lng,z){ return (lng+180)/360 * Math.pow(2,z)*256; }
+function haverD(a,b){
+  const R=6371000,dLat=(b[0]-a[0])*DEG2RAD,dLng=(b[1]-a[1])*DEG2RAD;
+  const s=Math.sin(dLat/2)**2+Math.cos(a[0]*DEG2RAD)*Math.cos(b[0]*DEG2RAD)*Math.sin(dLng/2)**2;
+  return Math.round(R*2*Math.atan2(Math.sqrt(s),Math.sqrt(1-s)));
+}
+
+const wrap = document.getElementById('mapwrap');
+const canvas = document.getElementById('mc');
+const ctx = canvas.getContext('2d');
+const tip = document.getElementById('tip');
+
+let Z = 15;  // zoom
+let offX, offY;  // pixel offset of top-left corner
+let W, H;
+let tiles = {};
+let activeType = 'all';
+let legOpen = true;
+let legH = 0;
+
+function tileKey(tx,ty,tz){ return `${tz}/${tx}/${ty}`; }
+
+function latLngToPixel(lat,lng){
+  return [lng2x(lng,Z) - offX, lat2y(lat,Z) - offY];
+}
+
+function mToPixels(m){
+  // approximate: 1 degree lat ≈ 111km
+  const latRad = AURA[0]*DEG2RAD;
+  const metersPerPixel = (Math.cos(latRad)*2*Math.PI*6378137)/(Math.pow(2,Z)*256);
+  return m/metersPerPixel;
+}
+
+function init(){
+  W = wrap.clientWidth;
+  H = wrap.clientHeight - legH;
+  canvas.width = W;
+  canvas.height = H + legH;
+  wrap.style.bottom = legH+'px';
+  canvas.style.width = W+'px';
+  canvas.style.height = (H+legH)+'px';
+
+  const cx = lng2x(AURA[1],Z);
+  const cy = lat2y(AURA[0],Z);
+  offX = cx - W/2;
+  offY = cy - H/2;
+  render();
+}
+
+function render(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // background
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  // tiles
+  const ts = 256;
+  const tx0 = Math.floor(offX/ts);
+  const ty0 = Math.floor(offY/ts);
+  const tx1 = Math.floor((offX+W)/ts);
+  const ty1 = Math.floor((offY+H)/ts);
+
+  for(let tx=tx0; tx<=tx1; tx++){
+    for(let ty=ty0; ty<=ty1; ty++){
+      const key = tileKey(tx,ty,Z);
+      const px = tx*ts - offX;
+      const py = ty*ts - offY;
+      if(tiles[key] && tiles[key].complete && tiles[key].naturalWidth){
+        ctx.drawImage(tiles[key], px, py, ts, ts);
+      } else if(!tiles[key]){
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        // Use multiple subdomains
+        const sub = ['a','b','c'][Math.abs(tx+ty)%3];
+        img.src = `https://${sub}.tile.openstreetmap.org/${Z}/${tx}/${ty}.png`;
+        img.onload = ()=>render();
+        img.onerror = ()=>{ tiles[key]='err'; };
+        tiles[key] = img;
+      }
+    }
+  }
+
+  const [ax,ay] = latLngToPixel(AURA[0],AURA[1]);
+
+  // Radii
+  RADII.forEach((r,i)=>{
+    const px = mToPixels(r);
+    ctx.beginPath();
+    ctx.arc(ax,ay,px,0,Math.PI*2);
+    ctx.fillStyle = RFILL[i];
+    ctx.fill();
+    ctx.strokeStyle = RSTROKE[i];
+    ctx.lineWidth = i===0?1.5:1;
+    ctx.setLineDash(i>0?[6,4]:[]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // label
+    const lx = ax + px*0.72;
+    const ly = ay - px*0.72;
+    ctx.font = 'bold 10px sans-serif';
+    ctx.fillStyle = '#1A6EBD';
+    ctx.shadowColor='#000'; ctx.shadowBlur=3;
+    ctx.fillText(r>=1000?(r/1000)+'km':r+'m', lx, ly);
+    ctx.shadowBlur=0;
+  });
+
+  // Place markers
+  PLACES.forEach(p=>{
+    if(activeType!=='all' && p.type!==activeType) return;
+    const [x,y] = latLngToPixel(p.lat,p.lng);
+    if(x<-20||x>W+20||y<-20||y>H+20) return;
+    const c = COLORS[p.type];
+    ctx.beginPath();
+    ctx.arc(x,y,9,0,Math.PI*2);
+    ctx.fillStyle = c;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.font = 'bold 7px sans-serif';
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(p.id, x, y);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+  });
+
+  // AURA marker
+  ctx.beginPath();
+  ctx.arc(ax,ay,13,0,Math.PI*2);
+  ctx.fillStyle = '#C8972A';
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+  ctx.font = 'bold 11px sans-serif';
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('A',ax,ay);
+  ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+}
+
+// ── PAN & ZOOM ──────────────────────────────────────────────────────────────
+let dragging=false, lastX=0, lastY=0;
+canvas.addEventListener('mousedown',e=>{ dragging=true; lastX=e.clientX; lastY=e.clientY; });
+window.addEventListener('mousemove',e=>{
+  if(!dragging)return;
+  offX -= e.clientX-lastX; offY -= e.clientY-lastY;
+  lastX=e.clientX; lastY=e.clientY; render();
+});
+window.addEventListener('mouseup',()=>dragging=false);
+
+let lastDist=0;
+canvas.addEventListener('touchstart',e=>{
+  if(e.touches.length===1){ dragging=true; lastX=e.touches[0].clientX; lastY=e.touches[0].clientY; }
+  if(e.touches.length===2){ lastDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY); }
+},{passive:true});
+canvas.addEventListener('touchmove',e=>{
+  if(e.touches.length===1 && dragging){
+    offX-=e.touches[0].clientX-lastX; offY-=e.touches[0].clientY-lastY;
+    lastX=e.touches[0].clientX; lastY=e.touches[0].clientY; render();
+  }
+  if(e.touches.length===2){
+    const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+    if(lastDist>0){ const ratio=d/lastDist; if(ratio>1.08&&Z<18)setZoom(Z+1); else if(ratio<0.93&&Z>12)setZoom(Z-1); }
+    lastDist=d;
+  }
+},{passive:true});
+canvas.addEventListener('touchend',()=>{ dragging=false; lastDist=0; });
+
+canvas.addEventListener('wheel',e=>{
+  e.preventDefault();
+  if(e.deltaY<0&&Z<18) setZoom(Z+1); else if(e.deltaY>0&&Z>12) setZoom(Z-1);
+},{passive:false});
+
+function setZoom(nz){
+  const cx=offX+W/2, cy=offY+H/2;
+  const scale=Math.pow(2,nz-Z);
+  offX=cx*scale-W/2; offY=cy*scale-H/2;
+  Z=nz; tiles={}; render();
+}
+
+// ── TOOLTIP ─────────────────────────────────────────────────────────────────
+canvas.addEventListener('click',e=>{
+  const rect=canvas.getBoundingClientRect();
+  const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+  // check AURA
+  const [ax,ay]=latLngToPixel(AURA[0],AURA[1]);
+  if(Math.hypot(mx-ax,my-ay)<18){
+    showTip(e.clientX,e.clientY,'AURA Santana','Espaço BTS Saúde/Serviços','Rua Dr. Zuquim, 62 × Rua Alferes Magalhães | 500m²+500m²','#C8972A');
+    return;
+  }
+  let found=null;
+  PLACES.forEach(p=>{
+    if(activeType!=='all'&&p.type!==activeType)return;
+    const[x,y]=latLngToPixel(p.lat,p.lng);
+    if(Math.hypot(mx-x,my-y)<14) found=p;
+  });
+  if(found){
+    const dist=haverD(AURA,[found.lat,found.lng]);
+    showTip(e.clientX,e.clientY,found.label,LABELS[found.type],found.addr+' · '+dist+'m do AURA',COLORS[found.type]);
+  } else {
+    tip.style.display='none';
+  }
+});
+
+function showTip(cx,cy,name,type,addr,color){
+  tip.innerHTML=`<strong>${name}</strong><div class="td">${type}</div><div class="ta">${addr}</div>`;
+  const W2=window.innerWidth, H2=window.innerHeight;
+  let x=cx+12, y=cy-10;
+  if(x+210>W2) x=cx-220;
+  if(y+80>H2) y=cy-85;
+  tip.style.left=x+'px'; tip.style.top=y+'px'; tip.style.display='block';
+  tip.style.borderColor=color+'66';
+  setTimeout(()=>tip.style.display='none',3000);
+}
+
+// ── FILTERS ─────────────────────────────────────────────────────────────────
+document.getElementById('filters').addEventListener('click',e=>{
+  if(!e.target.dataset.t)return;
+  activeType=e.target.dataset.t;
+  document.querySelectorAll('.fb').forEach(b=>b.classList.toggle('on',b.dataset.t===activeType));
+  render(); buildLegend();
+});
+
+// ── LEGEND ──────────────────────────────────────────────────────────────────
+function toggleLeg(){
+  legOpen=!legOpen;
+  document.getElementById('leg-scroll').style.display=legOpen?'flex':'none';
+  document.getElementById('leg-btn').textContent=legOpen?'▼':'▲';
+  setTimeout(()=>{ legH=document.getElementById('legend').offsetHeight; init(); },50);
+}
+
+function buildLegend(){
+  const types=['hospital','clinica','laboratorio','metro','prevent'];
+  let html='<div class="lrb">';
+  RADII.forEach((r,i)=>{ html+=`<div class="lr"><div class="lrc" style="border-color:${RSTROKE[i]};background:${RFILL[i]}"></div>${r>=1000?(r/1000)+'km':r+'m'}</div>`; });
+  html+='</div>';
+  types.forEach(t=>{
+    if(activeType!=='all'&&activeType!==t)return;
+    const ps=PLACES.filter(p=>p.type===t);
+    html+=`<div class="lcb"><div class="lch"><div class="ld" style="background:${COLORS[t]}"></div><span class="lct">${LABELS[t]}</span></div>`;
+    ps.forEach(p=>{ const d=haverD(AURA,[p.lat,p.lng]); html+=`<div class="li"><span class="ln" style="color:${COLORS[p.type]}">${p.id}</span>${p.label} <span style="color:#555">(${d}m)</span></div>`; });
+    html+='</div>';
+  });
+  html+='<div class="lab"><div class="lad"></div><span class="lal">AURA<br>Santana</span></div>';
+  document.getElementById('leg-scroll').innerHTML=html;
+}
+
+// ── INIT ────────────────────────────────────────────────────────────────────
+buildLegend();
+setTimeout(()=>{ legH=document.getElementById('legend').offsetHeight; init(); },100);
+window.addEventListener('resize',()=>{ tiles={}; setTimeout(()=>{ legH=document.getElementById('legend').offsetHeight; init(); },50); });
+</script>
+</body>
+</html>
